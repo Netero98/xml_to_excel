@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Exception;
 use SimpleXMLElement;
 
 class XmlToArrayService
@@ -13,9 +14,11 @@ class XmlToArrayService
      *   $xmlNode = simplexml_load_file('example.xml');
      *   $arrayData = xmlToArray($xmlNode);
      *   echo json_encode($arrayData);
+     * @throws Exception
      */
     function xmlToArray(SimpleXMLElement $xml, $options = []): array
     {
+
         $defaults = array(
             'namespaceRecursive' => false,  //setting to true will get xml doc namespaces recursively
             'removeNamespace' => false,     //set to true if you want to remove the namespace from resulting keys (recommend setting namespaceSeparator = '' when this is set to true)
