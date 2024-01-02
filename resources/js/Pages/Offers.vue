@@ -1,7 +1,7 @@
 <script setup>
 import Pagination from "@/Components/Pagination.vue";
 import {ref, watch} from "vue";
-import {router} from "@inertiajs/vue3"
+import {router, useForm} from "@inertiajs/vue3"
 import {routes} from "@/config.js";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
@@ -12,7 +12,11 @@ const props = defineProps({
     filters: Object
 })
 
+const form = useForm({
+})
+
 const search = ref(props.filters.search)
+const refreshProcessing = ref(false)
 
 watch(search, value => {
     router.visit(
@@ -48,7 +52,13 @@ function flushOffers() {
 }
 
 function refreshOffers() {
-    router.post(route(routes.offers_refresh))
+    refreshProcessing.value = true
+
+    router.post(route(routes.offers_refresh), {}, {
+        onFinish: () => {
+            refreshProcessing.value = false
+        }
+    })
 }
 
 </script>
@@ -63,9 +73,24 @@ function refreshOffers() {
                     placeholder="Search..."
                     class="flex-1 rounded-lg"
                 >
-                <DangerButton @click="flushOffers">Удалить данные на сервере</DangerButton>
-                <PrimaryButton @click="refreshOffers">Обновить данные на сервере</PrimaryButton>
-                <PrimaryButton @click="downloadExcel">Загрузить в формате Excel</PrimaryButton>
+                <DangerButton
+                    :disabled="refreshProcessing"
+                    @click="flushOffers"
+                >
+                    Удалить данные на сервере
+                </DangerButton>
+                <PrimaryButton
+                        :disabled="refreshProcessing"
+                        @click="refreshOffers"
+                >
+                    Обновить данные на сервере
+                </PrimaryButton>
+                <PrimaryButton
+                        :disabled="refreshProcessing"
+                        @click="downloadExcel"
+                >
+                    Загрузить в формате Excel
+                </PrimaryButton>
             </div>
 
             <div class=" mt-4 relative overflow-x-auto shadow-md sm:rounded-lg">
