@@ -5,6 +5,7 @@ import {router} from "@inertiajs/vue3"
 import {routes} from "@/config.js";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
+import DangerButton from "@/Components/DangerButton.vue";
 
 const props = defineProps({
     offers: Object,
@@ -42,6 +43,14 @@ function downloadExcel() {
     });
 }
 
+function flushOffers() {
+    router.delete(route(routes.offers_flush))
+}
+
+function refreshOffers() {
+    router.post(route(routes.offers_refresh))
+}
+
 </script>
 
 <template>
@@ -54,6 +63,8 @@ function downloadExcel() {
                     placeholder="Search..."
                     class="flex-1 rounded-lg"
                 >
+                <DangerButton @click="flushOffers">Удалить данные на сервере</DangerButton>
+                <PrimaryButton @click="refreshOffers">Обновить данные на сервере</PrimaryButton>
                 <PrimaryButton @click="downloadExcel">Загрузить в формате Excel</PrimaryButton>
             </div>
 

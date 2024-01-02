@@ -21,6 +21,8 @@ class RouteServiceProvider extends ServiceProvider
 
     public const ROUTE_OFFERS_INDEX = 'offers.index';
     public const ROUTE_OFFERS_DOWNLOAD_EXCEL = 'offers.download.excel';
+    public const ROUTE_OFFERS_REFRESH = 'offers.refresh';
+    public const ROUTE_OFFERS_FLUSH = 'offers.flush';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.

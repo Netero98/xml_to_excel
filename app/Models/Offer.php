@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Offer extends Model
 {
+    public const TABLE = 'offers';
+
     public const PROP_ID_FOREIGN = 'id_foreign';
     public const PROP_NAME = 'name';
     public const PROP_CATEGORY = 'category';

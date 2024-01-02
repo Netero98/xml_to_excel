@@ -1,13 +1,20 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Services;
 
+use App\Exceptions\DbTransactionRolledBackException;
 use App\Models\Offer;
-use App\Services\XmlToArrayService;
-use Illuminate\Console\Command;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use SimpleXMLElement;
 
-class ImportShopCategoriesOffersDataCommand extends Command
+class RefreshOffersDataService
 {
+    public function __construct(
+        private readonly XmlToArrayService $xmlService,
+    ) {
+    }
+
     private const CATEGORY_PROP_ID = '@id';
     private const CATEGORY_PROP_PARENT_ID = '@parentId';
     private const CATEGORY_PROP_NAME = '$';
@@ -30,34 +37,33 @@ class ImportShopCategoriesOffersDataCommand extends Command
     private const OFFER_PROP_NAME = 'name';
     private const OFFER_PROP_VENDOR = 'vendor';
 
-
     private const CATEGORY_HIERARCHY_0_LVL = 'category';
     private const CATEGORY_HIERARCHY_1_LVL = 'sub_category';
     private const CATEGORY_HIERARCHY_2_LVL = 'sub_sub_category';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'app:import-offers {--debug}';
+
+    public function flushOffers() {
+        DB::statement(sprintf('truncate table %s', Offer::TABLE));
+    }
 
     /**
-     * The console command description.
-     *
-     * @var string
+     * @throws DbTransactionRolledBackException
+     * @throws Exception
      */
-    protected $description = 'Command description';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function refreshOffersFromDefaultUrl(bool $debug = false): void
     {
         $url = config('url.offers_xml_source');
-        $isDebug = $this->option('debug');
 
-        $array = (new XmlToArrayService())->xmlToArray(
-            new \SimpleXMLElement($this->getXmlFrom($url, $isDebug))
+        $this->refreshFromUrlWithXml($url, $debug);
+    }
+
+    /**
+     * @throws DbTransactionRolledBackException
+     * @throws Exception
+     */
+    public function refreshFromUrlWithXml(string $url, bool $isDebug): void
+    {
+        $array = $this->xmlService->xmlToArray(
+            new SimpleXMLElement($this->getXmlFrom($url, $isDebug))
         );
 
         $shopData = $array['yml_catalog']['shop'];
@@ -68,36 +74,41 @@ class ImportShopCategoriesOffersDataCommand extends Command
 
         foreach ($allCategories as $categoryArr) {
             $allCategoriesIdsMap[$categoryArr[self::CATEGORY_PROP_ID]] = $categoryArr;
-
         }
 
         $allCategoriesHierarchies = $this->getAllCategoriesHierarchies($allCategoriesIdsMap);
 
         $allOffers = $shopData[self::SHOP_PROP_OFFERS][self::OFFERS_PROP_OFFER];
 
-        foreach ($allOffers as $offerArr) {
-            $offer = new Offer();
-            $offer->id_foreign = $offerArr[self::OFFER_PROP_ID];
-            $offer->available = $offerArr[self::OFFER_PROP_AVAILABLE] === 'true';
-            $offer->url = $offerArr[self::OFFER_PROP_URL];
-            $offer->price = $offerArr[self::OFFER_PROP_PRICE];
-            $offer->oldprice = $offerArr[self::OFFER_PROP_OLD_PRICE] ?? null;
-            $offer->currency_id = $offerArr[self::OFFER_PROP_CURRENCY_ID];
-            $offer->picture = $offerArr[self::OFFER_PROP_PICTURE] ?? null;
-            $offer->name = $offerArr[self::OFFER_PROP_NAME];
-            $offer->category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_0_LVL];
-            $offer->sub_category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_1_LVL];
-            $offer->sub_sub_category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_2_LVL] ?? null;
-            $offer->vendor = isset($offerArr[self::OFFER_PROP_VENDOR]) && $offerArr[self::OFFER_PROP_VENDOR] !== 'none'
-                ? $offerArr[self::OFFER_PROP_VENDOR]
-                : null;
+        try {
+            DB::transaction(function () use ($allOffers, $allCategoriesHierarchies) {
+                DB::statement(sprintf('truncate table %s', Offer::TABLE));
 
-            if (!$offer->save()) {
-                die('Ошибка при попытке сохранения' . PHP_EOL);
-            }
+                foreach ($allOffers as $offerArr) {
+                    $offer = new Offer();
+                    $offer->id_foreign = $offerArr[self::OFFER_PROP_ID];
+                    $offer->available = $offerArr[self::OFFER_PROP_AVAILABLE] === 'true';
+                    $offer->url = $offerArr[self::OFFER_PROP_URL];
+                    $offer->price = $offerArr[self::OFFER_PROP_PRICE];
+                    $offer->oldprice = $offerArr[self::OFFER_PROP_OLD_PRICE] ?? null;
+                    $offer->currency_id = $offerArr[self::OFFER_PROP_CURRENCY_ID];
+                    $offer->picture = $offerArr[self::OFFER_PROP_PICTURE] ?? null;
+                    $offer->name = $offerArr[self::OFFER_PROP_NAME];
+                    $offer->category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_0_LVL];
+                    $offer->sub_category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_1_LVL];
+                    $offer->sub_sub_category = $allCategoriesHierarchies[$offerArr[self::OFFER_PROP_CATEGORY_ID]][self::CATEGORY_HIERARCHY_2_LVL] ?? null;
+                    $offer->vendor = isset($offerArr[self::OFFER_PROP_VENDOR]) && $offerArr[self::OFFER_PROP_VENDOR] !== 'none'
+                        ? $offerArr[self::OFFER_PROP_VENDOR]
+                        : null;
+
+                    if (!$offer->save()) {
+                        throw new Exception();
+                    }
+                }
+            });
+        } catch (\Throwable) {
+            throw new DbTransactionRolledBackException();
         }
-
-        echo 'Импорт завершился успешно!' . PHP_EOL;
     }
 
     private function getAllCategoriesHierarchies(array $allCategoriesIdsMap): array

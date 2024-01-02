@@ -38,6 +38,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/offers', [OffersController::class, 'index'])->name(RouteServiceProvider::ROUTE_OFFERS_INDEX);
     Route::get('/offers/download/excel', [OffersController::class, 'downloadExcel'])->name(RouteServiceProvider::ROUTE_OFFERS_DOWNLOAD_EXCEL);
+    Route::delete('/offers/flush', [OffersController::class, 'flush'])->name(RouteServiceProvider::ROUTE_OFFERS_FLUSH);
+    Route::post('/offers/refresh', [OffersController::class, 'refresh'])->name(RouteServiceProvider::ROUTE_OFFERS_REFRESH);
 });
 
 require __DIR__.'/auth.php';
