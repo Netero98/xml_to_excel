@@ -3,7 +3,7 @@
    --volume $PWD:/app \
    --user $(id -u):$(id -g) \
    --workdir /app \
-   laravelsail/php83-composer:latest composer install
+   laravelsail/php81-composer:latest composer install
 
 2. copy .env.example to .env
 3. vendor/bin/sail up
