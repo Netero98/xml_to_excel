@@ -19,6 +19,9 @@ class RouteServiceProvider extends ServiceProvider
      */
     public const HOME = '/dashboard';
 
+    public const ROUTE_OFFERS_INDEX = 'offers.index';
+    public const ROUTE_OFFERS_DOWNLOAD_EXCEL = 'offers.download.excel';
+
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */

@@ -3,32 +3,34 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * @property string id
+ * @property int id
+ * @property string id_foreign
  * @property bool available
  * @property string url
  * @property int price
  * @property null|int oldprice
  * @property int currency_id
- * @property int category_id
  * @property null|string picture
  * @property string name
  * @property null|string vendor
- *
- * @property Category category
+ * @property string category
+ * @property string sub_category
+ * @property null|string sub_sub_category
  */
 class Offer extends Model
 {
-    public const PROP_CATEGORY_ID = 'category_id';
-
-    public function category(): HasOne
-    {
-        return $this->hasOne(
-            Category::class,
-            Category::PROP_ID,
-            self::PROP_CATEGORY_ID,
-        );
-    }
+    public const PROP_ID_FOREIGN = 'id_foreign';
+    public const PROP_NAME = 'name';
+    public const PROP_CATEGORY = 'category';
+    public const PROP_SUB_CATEGORY = 'sub_category';
+    public const PROP_SUB_SUB_CATEGORY = 'sub_sub_category';
+    public const PROP_URL = 'url';
+    public const PROP_PRICE = 'price';
+    public const PROP_OLDPRICE = 'oldprice';
+    public const PROP_CURRENCY_ID = 'currency_id';
+    public const PROP_PICTURE = 'picture';
+    public const PROP_VENDOR = 'vendor';
+    public const PROP_AVAILABLE = 'available';
 }

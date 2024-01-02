@@ -12,19 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('offers', function (Blueprint $table) {
-            $table->string('id')->unique()->nullable(false)->primary();
-            $table->boolean('available');
+            $table->id();
+            $table->string('id_foreign')->unique()->nullable(false);
+            $table->text('name');
+            $table->string('category');
+            $table->string('sub_category');
+            $table->string('sub_sub_category')->nullable(true);
             $table->text('url');
             $table->integer('price');
             $table->integer('oldprice')->nullable(true);
             $table->string('currency_id');
-            $table->foreignId('category_id')
-                ->constrained('categories')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
             $table->text('picture')->nullable(true);
-            $table->text('name');
             $table->text('vendor')->nullable(true);
+            $table->boolean('available');
             $table->timestamps();
         });
     }
